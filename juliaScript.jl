@@ -130,7 +130,7 @@ optimize!(m)
 # ===================================================
 status = termination_status(m)
 
-println("- Valeur Objective : ", objective_value(m))
-println("Volume d'eau : $(value.(vol))")
-println("Débit total : $(value.(debTot))")
+println("Puissance obtenue : ", objective_value(m)," MW")
+println("Volume d'eau : $(value.(vol)) hm³")
+println("Débit total : $(value.(debTot)) m³/s")
 println("Nombre de turbines fonctionnelles: $(value.(nbTurbMarch))")
