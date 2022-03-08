@@ -1,3 +1,4 @@
+
 # ===================================================
 # ===================  Libraries  ===================
 # ===================================================
@@ -12,14 +13,14 @@ m = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 #Main variables
 
 # Volume minimum = 29.8290 hm³, maximium = 37.2350 hm³ // Équivalent à la hauteur de chutte
-@variable(m, 29.8290 <= vol <= 37.2350, start=1, base_name="Volume")
+@variable(m, 29.8290 <= vol <= 37.2350, start=29, base_name="Volume")
 # Volume débit total = 217.9259 m³/s, maximium temporaire = 2082 m³/s
-@variable(m, 217.9259 <= debTot <=2082, start=1, base_name="Débit total à turbiner")
+@variable(m, 0 <= debTot <=2082, start=0, base_name="Débit total à turbiner")
 # Entre 1 et 5 turbine qui fonctionnent en simultanées.
-@variable(m, 1 <= nbTurbMarch <= 5, start=0, base_name="Nombre de turbines en marche")
+@variable(m, 1 <= nbTurbMarch <= 5, start=1, base_name="Nombre de turbines en marche")
 
 
-# Boolean numbers of Turbines
+# Boolean numbers of Turbines ( not used )
 @variable(m, 0 <= y1 <= 1, start=0, base_name="1 Turbine fonctionne")
 @variable(m, 0 <= y2 <= 1, start=0, base_name="2 Turbines fonctionnent")
 @variable(m, 0 <= y3 <= 1, start=0, base_name="3 Turbines fonctionnent")
@@ -31,6 +32,7 @@ m = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 # =================  Constraints   ==================
 # ===================================================
 
+#( not used )
 @constraint(m, nbTurbineWorking,y1+y2+y3+y4+y5 == 1 )
 
 # Contrainte assez d'eau : 
@@ -39,9 +41,10 @@ m = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 # q = debTot m³/s
 # vol = hauteurChuteNettes hm³
 # vol+1 = vol - q + 𝛿
-# Avec les conversion 𝜓 = 0,0864 pour 1 jour soit 𝜓 = 0.3456 pour 4 jours;
+# Avec les conversion 𝜓 = 0,0864 pour 1 jour
+const qApport = 36
 
-@constraint(m, enoughWater, vol - debTot * 0.0864 + 36 *0.0864 >= 29.8290 )
+@constraint(m, enoughWater, vol - debTot * 0.0864 + qApport *0.0864 >= 29.8290 )
 
 # ===================================================
 # =================  Functions   ==================
@@ -114,7 +117,12 @@ end
 
 # Ajoute tout les résultats à une liste, trie la liste puis retourne la somme des premiers résultats.
 function getMaxActiveTurbinePower(_volume,_debitTotal,_NbTurbineWorking)
-    listOfAllResults = [fturb1(_volume, _debitTotal), fturb2(_volume, _debitTotal), fturb3(_volume, _debitTotal), fturb4(_volume, _debitTotal), fturb5(_volume, _debitTotal)]
+    # Répartie le débit pour chaque turbine
+    _subDebit = _debitTotal / _NbTurbineWorking
+    # Crée une liste de toutes les puissance des turbines.
+    listOfAllResults = [fturb1(_volume, _subDebit), fturb2(_volume, _subDebit), fturb3(_volume, _subDebit), fturb4(_volume, _subDebit), fturb5(_volume, _subDebit)]
+
+    # Trie du plus grand au plus petit (rev=true)
     storedResults = sort(listOfAllResults, rev=true)[1:(round(Int, _NbTurbineWorking))]
     return sum(storedResults)
 end
